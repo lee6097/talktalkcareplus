@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>톡톡케어+ (TalkTalkCarePlus)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2em;
+      margin-bottom: 10px;
+      color: #0078d7;
+    }
+
+    .description {
+      max-width: 700px;
+      font-size: 0.95em;
+      color: #333;
+      background: #ffffffdd;
+      padding: 15px 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 8px #ddd;
+      margin-bottom: 30px;
+      line-height: 1.6;
+    }
+
+    #chatbox {
+      width: 100%;
+      max-width: 600px;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px #ccc;
+    }
+
+    #chat {
+      display: flex;
+      flex-direction: column;
+      max-height: 400px;
+      overflow-y: auto;
+      margin-top: 10px;
+    }
+
+    .bubble-container {
+      display: flex;
+      align-items: flex-end; /* 아랫단 맞춤 */
+      margin: 8px 0;
+    }
+
+    .bubble {
+      padding: 10px 14px;
+      border-radius: 10px;
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+
+    .user {
+      background: #d1e7ff;
+      align-self: flex-end;
+      margin-left: auto;
+    }
+
+    .ai {
+      background: #eee;
+      align-self: flex-start;
+      margin-right: auto;
+    }
+
+    #inputForm {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    #userInput {
+      flex: 1;
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 0.9em;
+      font-family: 'Arial', sans-serif;
+      line-height: 1.4;
+      resize: none;
+      overflow-y: auto; /* ← 중요: scroll 막고, JS가 높이 조절 */
+      min-height: 20px;    /* PC 기본 높이 */
+      max-height: 60px;    /* 최대 3줄 */
+      height: auto;        /* 초기값 자동으로 */
+    }
+
+    @media (max-width: 768px) {
+      #userInput {
+        min-height: 40px;  /* 모바일에서 기본 높이 증가 */
+        max-height: 75px;
+      }
+    }
+
+    button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 8px;
+      background: #0078d7;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #005fa3;
+    }
+
+    .reset-btn {
+      margin-top: 15px;
+      background: #888;
+    }
+
+    .reset-btn:hover {
+      background: #666;
+    }
+
+    .copy-btn {
+      font-size: 10px;
+      padding: 2px 6px;
+      background: transparent;
+      color: #666;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+      height: 22px;
+      margin: 0 4px;
+      flex-shrink: 0;
+    }
+
+    .copy-btn:hover {
+      background: #eee;
+      opacity: 1;
+    }
+
+    .user-container {
+      justify-content: flex-end;
+    }
+
+    .ai-container {
+      justify-content: flex-start;
+    }
+    
+    .allcopy-btn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 8px;
+      background: #0078d7;
+      color: white;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .allcopy-btn:hover {
+      background: #005fa3;
+    }
+  </style>
+</head>
+<body>
+  <h1>톡톡케어+ (TalkTalkCarePlus)</h1>
+  <div class="description">
+    톡톡케어+(TalkTalkCarePlus)는 OpenAI 기반의 의학 상담 프로그램입니다. 톡톡케어(TalkTalkCare)의 업그레이드 버전입니다. 의학과 관련된 다양한 정보를 검색하여 제시하고, 적절한 진료과를 추천할 수 있습니다.<br><br>
+    채팅창에 현재 가장 불편한 증상을 입력하거나, 또는 궁금한 의학지식에 대해 물어보시면 AI 비서가 상담해드립니다.<br><br>
+    다만, 일반적으로 잘 알려진 의학지식을 바탕으로 논리적 답변을 제시할 뿐 진료를 제공하는 서비스가 아니며, 답변에 대해 책임지지도 않습니다. 의학적 판단, 진단, 진찰, 처방을 할 수 없으며, 정확한 진단과 치료를 위해서는 반드시 의료기관을 방문하여 의료 전문가의 진료를 받으시기 바랍니다.<br><br>
+    또한 이 챗봇은 어떠한 정보도 저장 및 수집하지 않습니다. 다만 민감한 건강정보는 개인정보 보호를 위해 입력을 삼가주시기 바랍니다.
+  </div>
+
+  <div id="chatbox">
+    <div id="chat"></div>
+    <form id="inputForm">
+      <textarea id="userInput" rows="1" placeholder="현재 불편한 증상 또는 궁금한 의학지식을 입력하세요."></textarea>
+      <button type="submit">보내기</button>
+    </form>
+    <button class="reset-btn" onclick="location.reload()">🔄 대화 초기화</button>
+    <button class="allcopy-btn" onclick="copyAll()">📝 전체 복사</button>
+  </div>
+
+  <script>
+    const chat = document.getElementById('chat');
+    const form = document.getElementById('inputForm');
+    const userInput = document.getElementById('userInput');
+
+    const messages = [
+      { role: "system", content: "너는 공감능력 높은 상냥한 성격의 건강 정보 상담사야. 사용자가 증상을 말하면, 언제부터 아팠는지, 어디(위치)가 아픈지, 특별히 어떨 때마다 아픈지, 스스로 예상되는 원인이 있는지, 다른 관련 증상이 있는지, 약을 먹고 있는게 있는지(보통 약이 원인이 되는 경우가 많지 않지만, 그래도 혹시 모르니 물어봐. 이 내용은 굳이 상담 때 언급하지는 않아도 돼.), 과거에도 이런적이 있었는지, 다른 기저질환이 있는지 등을 상담 형식으로(나열식 말고 상담자와 상호작용하면서) 천천히 하나씩(한 번에 질문 2개 이상씩 물어보면 사용자가 답변하기 헷갈릴 수 있기 때문에, 그리고 하나씩 천천히 자신의 이야기를 들어준다는 느낌을 주기 위해서 반드시 한 채팅에 하나씩 물어보는 게 중요해) 물어봐줘. 꼭 위에 열거한 내용들에 맞추어 딱딱하게 물어보지 않아도 되고, 너가 상황을 추론하는 데 필요한 질문들은 과하지 않은 선에서 자연스럽게 몇 개 알아서 추가해서 물어봐도 좋아. 마지막에 너의 판단으로(MSD manual 등을 참고해도 좋아) 가능성 있는 여러 상황들을 제시해주고, 적절한 진료과를 추천해줘. 너는 의사면허가 없으니 진료 행위로 해석될 수 있는 진단과 처방은 절대로 하지 말고, 일반적 의학지식에 근거한 조언만 해줘야만 해. '일반적으로 이러한 상황들을 의심할 수 있는데, 정확한 진단을 위해서 꼭 의료기관에 내원해서 의료전문가의 진료를 받아야 한다'와 같은 모호한 자세를 취해주어야 해(자연스럽게. 인용하지 말고.). 진료과는 가장 적절한 2~3개를 추천해주고, 진료과 추천이 이 상담의 사실상의 최종 목적이니 꼭 언급해줘야 해. 그리고 대화를 마무리할 때, 다른 대화를 새롭게 하고 싶다면 '대화 초기화' 버튼을 누르면 된다고 안내해줘. 사용자가 만약에 처음에 증상이나 불편함이 아닌 일반적인 의학지식에 대해 물어본다면, 문답과정을 거치지 않고 그냥 최종답변을 해주면 돼. 다만 이때도 '일반적인 의학지식에 근거한 답변이니 정확한 진단과 처방은 의료기관에 내원해서 의료전문가의 조언을 들어야 한다'와 같은 자세를 취해줘야 해(자연스럽게. 인용하지 말고.). 이때도 마찬가지로 대화를 마무리할 때 다른 대화를 새롭게 하고 싶다면 '대화 초기화' 버튼을 누르면 된다고 안내해줘." }
+    ];
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      appendBubble(text, 'user');
+      messages.push({ role: 'user', content: text });
+      userInput.value = '';
+      userInput.disabled = true;
+
+      appendBubble('⏳ 답변 작성 중... 최대 1분까지 소요될 수 있습니다.', 'ai');
+
+      try {
+        const res = await fetch('https://talktalkcareplus.onrender.com/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages })
+        });
+
+        const data = await res.json();
+        removeLastBubble();
+        messages.push({ role: 'assistant', content: data.reply });
+        appendBubble(data.reply, 'ai');
+      } catch (err) {
+        removeLastBubble();
+        appendBubble('⚠️ 오류가 발생했어요. 다시 시도해 주세요.', 'ai');
+      } finally {
+        userInput.disabled = false;
+        userInput.focus();
+      }
+    };
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.appendChild(document.createTextNode(text));
+      return div.innerHTML.replace(/\n/g, "<br>");
+    }
+
+    function appendBubble(text, sender) {
+      const container = document.createElement('div');
+      container.className = `bubble-container ${sender}-container`;
+
+      const bubble = document.createElement('div');
+      bubble.className = `bubble ${sender}`;
+      bubble.innerHTML = escapeHtml(text);
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'copy-btn';
+      copyBtn.textContent = '📋 복사';
+      copyBtn.onclick = () => copyToClipboard(text);
+
+      if (sender === 'user') {
+        // 사용자 말풍선: 복사 버튼 → 말풍선
+        container.appendChild(bubble);
+      } else {
+        // 상담자 말풍선: 말풍선 → 복사 버튼
+        container.appendChild(bubble);
+        container.appendChild(copyBtn);
+      }
+
+      chat.appendChild(container);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+
+    function removeLastBubble() {
+      const last = chat.lastElementChild;
+      if (last) chat.removeChild(last);
+    }
+
+    function copyToClipboard(text) {
+      const temp = document.createElement('textarea');
+      temp.value = text;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand('copy');
+      document.body.removeChild(temp);
+    }
+
+    function copyAll() {
+      let allMessages = '';
+      const containers = document.getElementsByClassName('bubble-container');
+
+      for (let container of containers) {
+        const bubble = container.querySelector('.bubble');
+        if (!bubble) continue;
+
+        const isUser = bubble.classList.contains('user');
+        const label = isUser ? '사용자' : '톡톡케어+';
+        const text = bubble.innerText.trim();
+
+        allMessages += `${label}: ${text}\n\n`;
+      }
+
+      copyToClipboard(allMessages.trim());
+    }
+  </script>
+
+    
+    
+  <!-- 관리자 버튼 (숨김 처리) -->
+  <button onclick="openAdmin()" style="display:none;" id="adminBtn">📊 관리자 페이지</button>
+  <script>
+    async function openAdmin() {
+      const password = prompt("🔐 관리자 비밀번호를 입력하세요");
+      const res = await fetch(`https://talktalkcareplus.onrender.com/admin?password=${encodeURIComponent(password)}`);
+      if (res.ok) {
+        const data = await res.json();
+        alert(`📊 페이지 조회수: ${data.pageViews}\n💬 메시지 수: ${data.messageCount}`);
+      } else {
+        alert('❌ 비밀번호가 틀렸습니다.');
+      }
+    }
+  </script>
+  <script>
+  fetch('https://talktalkcareplus.onrender.com/view');
+  </script>
+
+  <script>
+    // Enter: 제출, Shift+Enter: 줄바꿈
+    document.addEventListener('DOMContentLoaded', () => {
+      const userInput = document.getElementById('userInput');
+      const form = document.getElementById('inputForm');
+
+      userInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault(); // 기본 줄바꿈 방지
+          form.dispatchEvent(new Event('submit')); // form 제출
+        }
+      });
+    });
+  </script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const userInput = document.getElementById('userInput');
+      userInput.addEventListener('input', () => {
+        userInput.style.height = 'auto'; // 먼저 높이 초기화
+
+        // 최대 높이 제한 반영
+        const computed = window.getComputedStyle(userInput);
+        const maxHeight = parseFloat(computed.maxHeight);
+
+        // scrollHeight가 maxHeight보다 크면 maxHeight로 고정
+        const newHeight = Math.min(userInput.scrollHeight, maxHeight);
+        userInput.style.height = newHeight + 'px';
+
+        // ✅ 스크롤바 보이도록 설정 (모바일에서도 작동)
+        if (userInput.scrollHeight > maxHeight) {
+          userInput.style.overflowY = 'auto';
+        } else {
+          userInput.style.overflowY = 'hidden';
+        }
+      });
+    });
+  </script>
+  
+</body>
+</html>
