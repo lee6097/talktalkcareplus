@@ -331,16 +331,21 @@
   </script>
 
   <script>
-    // Enter: 제출, Shift+Enter: 줄바꿈
     document.addEventListener('DOMContentLoaded', () => {
       const userInput = document.getElementById('userInput');
       const form = document.getElementById('inputForm');
 
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
       userInput.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault(); // 기본 줄바꿈 방지
-          form.dispatchEvent(new Event('submit')); // form 제출
+        if (!isMobile) {
+          // PC: Enter로 전송, Shift+Enter로 줄바꿈
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            form.dispatchEvent(new Event('submit'));
+          }
         }
+        // 모바일은 기본 동작 유지 (줄바꿈됨)
       });
     });
   </script>
