@@ -9,7 +9,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY // 보안 중요! 일반 공개 키 아님
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 const app = express();
@@ -22,7 +22,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// 메모리에서 관리되는 숫자
+const systemPrompt = process.env.SYSTEM_PROMPT;  // ⬅️ 시스템 프롬프트 추가
+
 let pageViews = 0;
 let messageCount = 0;
 
@@ -35,11 +36,9 @@ async function initializeMetrics() {
 
   if (error) {
     if (error.message.includes('no rows returned')) {
-      // id=1이 없으면 새로 삽입
       const { error: insertError } = await supabase
         .from('metricsplus')
         .insert([{ id: 1, pageViews: 0, messageCount: 0 }]);
-
       if (insertError) {
         console.error('데이터 삽입 오류:', insertError.message);
       } else {
@@ -55,8 +54,6 @@ async function initializeMetrics() {
   }
 }
 
-
-
 async function updateMetrics() {
   const { error } = await supabase
     .from('metricsplus')
@@ -66,12 +63,12 @@ async function updateMetrics() {
   if (error) console.error('Supabase 업데이트 오류:', error.message);
 }
 
-// 기존 루트 경로 (조회수 증가 제거)
+// index.html 전송 (조회수 증가 없음)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../index.html'));
 });
 
-// 새로 추가: 조회수 증가 전용 API
+// 조회수 증가 API
 app.get('/view', async (req, res) => {
   pageViews++;
   await updateMetrics();
@@ -79,16 +76,23 @@ app.get('/view', async (req, res) => {
   res.sendStatus(200);
 });
 
+// 메시지 처리 API (GPT 응답 포함)
 app.post('/chat', async (req, res) => {
   messageCount++;
   await updateMetrics();
   console.log('Message Count:', messageCount);
 
   const { messages } = req.body;
+
+  const fullMessages = [
+    { role: "system", content: systemPrompt },  // 시스템 프롬프트 추가
+    ...messages
+  ];
+
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4.1',
-      messages: messages,
+      model: 'gpt-4.1',  // 모델 이름 변경
+      messages: fullMessages
     });
     res.json({ reply: completion.choices[0].message.content });
   } catch (err) {
@@ -97,7 +101,7 @@ app.post('/chat', async (req, res) => {
   }
 });
 
-// 관리자만 볼 수 있는 페이지
+// 관리자 통계 확인 API
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 app.get('/admin', (req, res) => {
@@ -111,12 +115,12 @@ app.get('/admin', (req, res) => {
   });
 });
 
-// 서버를 시작하는 함수
+// 서버 시작
 async function startServer() {
-  await initializeMetrics(); // Supabase에서 값을 불러오는 비동기 함수
+  await initializeMetrics();
   app.listen(3000, () => {
     console.log('✅ 서버가 3000번 포트에서 실행 중입니다');
   });
 }
 
-startServer(); // 서버 시작
+startServer();
