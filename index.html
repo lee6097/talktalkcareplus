@@ -293,9 +293,9 @@
         button.textContent = '⏹️ 중지';
 
         const cleaned = rawText
-          .replace(/\([^)]*\)/g, '')
-          .replace(/[*#\-]/g, '')
-          .trim();
+          .replace(/\([^)]*\)/g, '')         
+          .replace(/[*#\-⚠️⏳]/g, '')         
+          .trim();   
 
         const sentences = cleaned
           .split(/[\.\!\?]+[\s\n]+|\n+/)
