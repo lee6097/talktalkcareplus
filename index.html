@@ -432,14 +432,9 @@
                     userInput.value = '';
                 }
             } else {
-                // 자동 종료된 경우: 오류 메시지 표시
-                alert('🎤 음성 인식 중 문제가 발생했습니다.');
-                micBtn.disabled = false;
-                micBtn.textContent = '🎤';
-                userInput.classList.remove('listening');
-                userInput.disabled = false;
-                sendBtn.disabled = false;
-                isListening = false;
+                // 자동 종료된 경우: 공백 추가 후 다시 시작
+                fullTranscript += ' ';
+                recognition.start();
             }
         });
 
