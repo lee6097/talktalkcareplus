@@ -115,7 +115,7 @@ app.post('/chat', async (req, res) => {
     ];
 
     const metaCompletion = await openai.chat.completions.create({
-        model: 'gpt-4.1-mini',
+        model: 'gpt-4.1',
         messages: metaAnalysisMessages,
         max_tokens: 5
     });
@@ -137,7 +137,7 @@ app.post('/chat', async (req, res) => {
       ];
 
       const queryCompletion = await openai.chat.completions.create({
-          model: 'gpt-4.1-mini',
+          model: 'gpt-4.1',
           messages: querySynthesisMessages,
           max_tokens: 20 
       });
