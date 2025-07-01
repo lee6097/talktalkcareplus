@@ -32,7 +32,7 @@ let messageCount = 0;
 
 async function initializeMetrics() {
   const { data, error } = await supabase
-    .from('metrics')
+    .from('metricsplus')
     .select('*')
     .eq('id', 1)
     .single();
@@ -41,7 +41,7 @@ async function initializeMetrics() {
     if (error.message.includes('no rows returned')) {
       // id=1이 없으면 새로 삽입
       const { error: insertError } = await supabase
-        .from('metrics')
+        .from('metricsplus')
         .insert([{ id: 1, pageViews: 0, messageCount: 0 }]);
       if (insertError) {
         console.error('데이터 삽입 오류:', insertError.message);
@@ -62,7 +62,7 @@ async function initializeMetrics() {
 
 async function updateMetrics() {
   const { error } = await supabase
-    .from('metrics')
+    .from('metricsplus')
     .update({ pageViews, messageCount })
     .eq('id', 1);
 
