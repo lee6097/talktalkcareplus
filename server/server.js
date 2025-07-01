@@ -110,12 +110,12 @@ app.post('/chat', async (req, res) => {
       { role: 'assistant', content: reply }, // 방금 생성한 답변까지 대화에 포함
       { 
         role: 'user', 
-        content: "위 대화는 상담 대화가 끝난 상태(의학 관련 최종 답변이나 조언이 제시되고 대화 초기화가 언급된 상태)인가요? '네' 또는 '아니오'로만 명확하게 답해주세요."
+        content: "위 대화는 상담 대화가 끝난 상태(1:의학 관련 최종 답변이나 조언이 제시되고, 2:대화 초기화가 언급된 상태. 1과 2가 모두 충족)인가요? '네' 또는 '아니오'로만 명확하게 답해주세요."
       }
     ];
 
     const metaCompletion = await openai.chat.completions.create({
-        model: 'gpt-4.1',
+        model: 'gpt-4.1-mini',
         messages: metaAnalysisMessages,
         max_tokens: 5
     });
@@ -137,7 +137,7 @@ app.post('/chat', async (req, res) => {
       ];
 
       const queryCompletion = await openai.chat.completions.create({
-          model: 'gpt-4.1',
+          model: 'gpt-4.1-mini',
           messages: querySynthesisMessages,
           max_tokens: 20 
       });
