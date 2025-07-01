@@ -6,10 +6,12 @@ const path = require('path');
 require('dotenv').config();
 
 const { createClient } = require('@supabase/supabase-js');
+const { google } = require('googleapis');
+const fetch = require('node-fetch');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY // 보안 중요! 일반 공개 키 아님
 );
 
 const app = express();
@@ -22,22 +24,24 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const systemPrompt = process.env.SYSTEM_PROMPT;  // ⬅️ 시스템 프롬프트 추가
+const systemPrompt = process.env.SYSTEM_PROMPT;
 
+// 메모리에서 관리되는 숫자
 let pageViews = 0;
 let messageCount = 0;
 
 async function initializeMetrics() {
   const { data, error } = await supabase
-    .from('metricsplus')
+    .from('metrics')
     .select('*')
     .eq('id', 1)
     .single();
 
   if (error) {
     if (error.message.includes('no rows returned')) {
+      // id=1이 없으면 새로 삽입
       const { error: insertError } = await supabase
-        .from('metricsplus')
+        .from('metrics')
         .insert([{ id: 1, pageViews: 0, messageCount: 0 }]);
       if (insertError) {
         console.error('데이터 삽입 오류:', insertError.message);
@@ -54,21 +58,23 @@ async function initializeMetrics() {
   }
 }
 
+
+
 async function updateMetrics() {
   const { error } = await supabase
-    .from('metricsplus')
+    .from('metrics')
     .update({ pageViews, messageCount })
     .eq('id', 1);
 
   if (error) console.error('Supabase 업데이트 오류:', error.message);
 }
 
-// index.html 전송 (조회수 증가 없음)
+// 기존 루트 경로 (조회수 증가 제거)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../index.html'));
 });
 
-// 조회수 증가 API
+// 새로 추가: 조회수 증가 전용 API
 app.get('/view', async (req, res) => {
   pageViews++;
   await updateMetrics();
@@ -76,32 +82,109 @@ app.get('/view', async (req, res) => {
   res.sendStatus(200);
 });
 
-// 메시지 처리 API (GPT 응답 포함)
 app.post('/chat', async (req, res) => {
+  // --- 이 부분은 사용자님의 기존 코드와 동일합니다 (그대로 유지) ---
   messageCount++;
   await updateMetrics();
   console.log('Message Count:', messageCount);
-
   const { messages } = req.body;
 
-  const fullMessages = [
-    { role: "system", content: systemPrompt },  // 시스템 프롬프트 추가
-    ...messages
-  ];
-
   try {
+    // 1. [AI의 1차 판단] 먼저 평소처럼 답변을 생성합니다.
+    const initialMessages = [
+      { role: "system", content: systemPrompt },
+      ...messages
+    ];
+
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4.1',  // 모델 이름 변경
-      messages: fullMessages
+      model: 'gpt-4.1',
+      messages: initialMessages,
     });
-    res.json({ reply: completion.choices[0].message.content });
+
+    // 챗봇이 생성한 답변을 'reply' 변수에 저장합니다.
+    let reply = completion.choices[0].message.content;
+
+    // 2. [AI의 2차 판단] 지금이 최종 답변 타이밍인지 AI에게 직접 물어봅니다.
+    const metaAnalysisMessages = [
+      ...initialMessages,
+      { role: 'assistant', content: reply }, // 방금 생성한 답변까지 대화에 포함
+      { 
+        role: 'user', 
+        content: "위 대화는 최종 의학 답변이 제시되어 상담이 끝난 상태인가요? '네' 또는 '아니오'로만 명확하게 답해주세요."
+      }
+    ];
+
+    const metaCompletion = await openai.chat.completions.create({
+        model: 'gpt-4.1-mini',
+        messages: metaAnalysisMessages,
+        max_tokens: 5
+    });
+
+    const isFinalAnswer = metaCompletion.choices[0].message.content.includes('네');
+
+    // AI가 '최종 답변'이라고 판단한 경우에만 출처 검색을 시작합니다.
+    if (isFinalAnswer) {
+      console.log("AI가 최종 답변으로 판단하여 출처 검색을 시작합니다.");
+
+      // 3. [AI의 3차 판단] 전체 대화를 바탕으로 '핵심 검색어'를 생성하도록 요청합니다.
+      const querySynthesisMessages = [
+          ...initialMessages,
+          { role: 'assistant', content: reply },
+          { 
+              role: 'user', 
+              content: "참고문헌을 제시하기 위해, 위 대화 전체의 핵심 주제(마지막 답변 중심)를 2~4단어의 영어 구글 검색어로 만들어줘."
+          }
+      ];
+
+      const queryCompletion = await openai.chat.completions.create({
+          model: 'gpt-4.1-mini',
+          messages: querySynthesisMessages,
+          max_tokens: 20 
+      });
+      
+      // AI가 따옴표 등 불필요한 문자를 포함할 수 있으니 제거해줍니다.
+      const searchQuery = queryCompletion.choices[0].message.content.replace(/["'\.]/g, '').trim();
+
+      console.log(`AI가 생성한 검색어: "${searchQuery}"`);
+
+      // 4. AI가 만들어준 핵심 검색어로 구글 검색을 실행합니다.
+      const searchResponse = await google.customsearch('v1').cse.list({
+        auth: process.env.GOOGLE_API_KEY,
+        cx: process.env.SEARCH_ENGINE_ID,
+        q: searchQuery,
+        num: 3
+      });
+
+      // 구글 검색 결과 전체를 'searchResults' 상자에 담습니다.
+      const searchResults = searchResponse.data.items;
+
+      // 검색 결과가 하나라도 있다면,
+      if (searchResults && searchResults.length > 0) {
+        
+        // 5. 찾은 출처들을 번호가 매겨진 목록으로 만듭니다.
+        // 예: 1. https://... \n 2. https://...
+        const sourceList = searchResults
+          .map((item, index) => `${index + 1}. ${item.link}`)
+          .join('\n'); // 각 링크를 줄바꿈(\n)으로 연결합니다.
+
+        console.log(`찾은 출처 목록:\n${sourceList}`);
+        
+        // 6. 기존 답변의 맨 뒤에, 완성된 출처 목록을 덧붙입니다.
+        reply += `\n\n---\n참고문헌:\n${sourceList}`;
+      }
+    }
+
+    // 6. 최종적으로 완성된 답변을 사용자에게 보냅니다.
+    res.json({ reply: reply });
+
   } catch (err) {
     console.error(err);
-    res.status(500).send('OpenAI 오류');
+    res.status(500).send('서버 오류 발생');
   }
 });
 
-// 관리자 통계 확인 API
+
+// 관리자만 볼 수 있는 페이지
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 app.get('/admin', (req, res) => {
@@ -115,12 +198,12 @@ app.get('/admin', (req, res) => {
   });
 });
 
-// 서버 시작
+// 서버를 시작하는 함수
 async function startServer() {
-  await initializeMetrics();
+  await initializeMetrics(); // Supabase에서 값을 불러오는 비동기 함수
   app.listen(3000, () => {
     console.log('✅ 서버가 3000번 포트에서 실행 중입니다');
   });
 }
 
-startServer();
+startServer(); // 서버 시작
