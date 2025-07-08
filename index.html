@@ -180,7 +180,7 @@
     const messages = [];
 
     window.addEventListener('DOMContentLoaded', () => {
-      const welcome = "반갑습니다. 더 똑똑한 AI 건강 상담사 톡톡케어플러스입니다. 현재 가장 불편한 증상 또는 궁금한 건강지식을 입력해주세요.";
+      const welcome = "반갑습니다. 똑똑한 AI 건강 상담사 톡톡케어입니다. 현재 가장 불편한 증상 또는 궁금한 건강지식을 입력해주세요.\n\n※톡톡케어 건강상담은 의료인의 답변이 아니며, 잘못된 답변에 대해 책임질 수 없습니다.\n\n※톡톡케어는 개인정보 및 대화내용을 저장 및 수집하지 않습니다.";
       appendBubble(welcome, 'ai');
     });
 
@@ -209,7 +209,7 @@
         appendBubble(data.reply, 'ai');
       } catch (err) {
         removeLastBubble();
-        appendBubble('⚠️ 오류가 발생했어요. 다시 시도해 주세요.', 'ai');
+        appendBubble('⚠️ 메시지 전송 중 오류가 발생했습니다.\n\n방법 1) 1분 뒤 다시 시도해주세요.\n방법 2) 네트워크 상태를 확인해주세요.\n방법 3) 개발자에게 문의해주세요.', 'ai');
       } finally {
         userInput.disabled = false;
         userInput.focus();
