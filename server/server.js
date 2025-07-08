@@ -121,7 +121,7 @@ app.post('/chat', async (req, res) => {
 
     // AI가 '최종 답변'이라고 판단한 경우에만 출처 검색을 시작합니다.
     if (isFinalAnswer) {
-      console.log("AI가 최종 답변으로 판단하여 출처 검색을 시작합니다.");
+      // console.log("AI가 최종 답변으로 판단하여 출처 검색을 시작합니다.");
 
       // 3. [AI의 3차 판단] 전체 대화를 바탕으로 '핵심 검색어'를 생성하도록 요청합니다.
       const querySynthesisMessages = [
@@ -164,7 +164,7 @@ app.post('/chat', async (req, res) => {
           .map((item, index) => `${index + 1}. ${item.link}`)
           .join('\n'); // 각 링크를 줄바꿈(\n)으로 연결합니다.
 
-        console.log(`찾은 출처 목록:\n${sourceList}`);
+        // console.log(`찾은 출처 목록:\n${sourceList}`);
 
         // 6. 기존 답변의 맨 뒤에, 완성된 출처 목록을 덧붙입니다.
         reply += `\n\n---\n참고문헌:\n${sourceList}`;
