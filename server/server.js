@@ -164,7 +164,7 @@ app.post('/chat', async (req, res) => {
           .map((item, index) => `${index + 1}. ${item.link}`)
           .join('\n'); // 각 링크를 줄바꿈(\n)으로 연결합니다.
 
-        // console.log(`찾은 출처 목록:\n${sourceList}`);
+        console.log(`찾은 출처 목록:\n${sourceList}`);
 
         // 6. 기존 답변의 맨 뒤에, 완성된 출처 목록을 덧붙입니다.
         reply += `\n\n---\n참고문헌:\n${sourceList}`;
