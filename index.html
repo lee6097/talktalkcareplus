@@ -222,7 +222,7 @@
       appendBubble('⏳ 답변 작성 중... 최대 1분까지 소요될 수 있습니다.', 'ai');
 
       try {
-        const res = await fetch('https://https://talktalkcareplus.onrender.com/chat', {
+        const res = await fetch('https://talktalkcareplus.onrender.com/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ messages })
@@ -503,7 +503,7 @@
   <script>
     async function openAdmin() {
       const password = prompt("🔐 관리자 비밀번호를 입력하세요");
-      const res = await fetch(`https://https://talktalkcareplus.onrender.com/admin?password=${encodeURIComponent(password)}`);
+      const res = await fetch(`https://talktalkcareplus.onrender.com/admin?password=${encodeURIComponent(password)}`);
       if (res.ok) {
         const data = await res.json();
         alert(`📊 페이지 조회수: ${data.pageViews}\n💬 메시지 수: ${data.messageCount}`);
