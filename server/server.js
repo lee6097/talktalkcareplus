@@ -94,7 +94,7 @@ app.post('/chat', async (req, res) => {
     ];
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-5',
+      model: 'gpt-4.1',
       messages: initialMessages,
     });
 
@@ -112,9 +112,9 @@ app.post('/chat', async (req, res) => {
     ];
 
     const metaCompletion = await openai.chat.completions.create({
-      model: 'gpt-5-mini',
+      model: 'gpt-4.1-mini',
       messages: metaAnalysisMessages,
-      max_completion_tokens: 5
+      max_tokens: 5
     });
 
     const isFinalAnswer = metaCompletion.choices[0].message.content.includes('네');
@@ -134,9 +134,9 @@ app.post('/chat', async (req, res) => {
       ];
 
       const queryCompletion = await openai.chat.completions.create({
-        model: 'gpt-5-mini',
+        model: 'gpt-4.1-mini',
         messages: querySynthesisMessages,
-        max_completion_tokens: 20
+        max_tokens: 20
       });
 
       // AI가 따옴표 등 불필요한 문자를 포함할 수 있으니 제거해줍니다.
